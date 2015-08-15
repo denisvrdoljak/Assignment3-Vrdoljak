@@ -1,0 +1,43 @@
+Denis Vrdoljak
+w205
+Assignment 3
+aws bucket: denisvrdoljak-w205-asn2
+
+1.1
+Asn3.py pulls all tweets from S3, and stores them into a Mongo DB. Since my tweets were pulled through the streaming api, I wouldn’t have duplicates, however, with the full .json of each tweet, Mongo manages duplicates by skipping them. I use a Try/Except to allow skipping duplicates without causing an error/failure.
+#note, there is also a script to clean up (local) files, CleanJsons.py, which removes extra “\n”-s so json.loads can better handle a file. (json.loads fails if passed an empty string.) Additionally, my code (without using CleanJsons.py) skips over empty lines, and uses a Try/Except to handle any corrupted or bad jsons. It simply skips to the next one if it cannot load the present one.
+
+1.2
+To collect tweets through the REST api, I wrote a separate script to save them locally then I upload from the file and store into Mongo. My IDE has tweepy xx.4, which does not support tweet._json (implemented in version xx.7), so I wouldn’t have been able to get the full JSON of a tweet without this extra step. The Asn3_Restupload.py script uploads the tweets from the temporary file into Mongo, .
+
+I did not retrieve many #NBAFinals2015/#Warriors REST api hits, so I instead used Greece/Euro for my query (ie, recent news about Greece being told not to use the Euro due to their economic issues). This gave me almost 2800 tweets to work with. Also, I queried for the words, not the hashtags, for this part because it gave better results. (People don’t seem to use those words as hashtags when they tweet about Greece/the Euro.)
+
+#note, I created my top30 db in the Analyze.py file, and also computed the lexical diversity of those. (This was easier to manage/test on while writing the code, and the later part about pulling those out would already have the lexical diversity values added anyway. Lexical diversity was calculated from the DB with the full REST api tweets in both cases.)
+#note2 …on second thought, this looks like the order the instructions gave anyway.
+
+2.1
+These are in a DB called Top30. There are actually 43 tweets in there, as there was a 21-way tie at number 23
+
+2.2
+These are found by the script in Analyze.py, and also dumped into a file top30.txt, giving each: user name, lexical score, location.
+note: I used the existing tweet json structure, but modified it by adding a top level dictionary member called lexscore with a float value for the lexical diversity score.
+
+2.2
+Not sure if I did this part correctly, the directions are a bit comfusing/unclear:
+I found the list of followers from part 2.1, the users with the top 30 retweets. All 30 (in my case, 42) tweets are from unique users, so there was no need to check for duplicate users. However, Mongo’s duplicate handling scheme (not inserting duplicate data) would have accounted for that given the structure of my script and followers db.
+
+My followers DB stores the user being follower under “username”, followed by the follower’s user name under “follower.” This creates a separate entry for each user/follower instance, and allows Mongo DB to handle/skip over duplicates, while also still allowing for a reverse follower/user (ie, they both follow each other and are in the top retweets list).
+
+In follower-check.py, I essentially run the same code as the previous follower.py, but instead of inserting new entries, I simply check if there is a result. If there is no match, that is a dropped/un-followed match, and I print that to sys-out. I did not have any of these as I did not have time to run the check code enough time later to observe any changes.
+
+An alternative to this, which I didn’t implement, could have been to go through the list of followers for each user, and insert an extra field into the DB Still_Followed=0, changing the value to 1 for each user-follower pair. Then, searching for St_Follwers: {$eq:0} would return the list of un-followed followers.
+
+2.4
+##
+
+3.1
+My code takes the DB file directly out of the /data/db directory, and uploads to S3. It starts with an option (user input) to select upload (aka backup), download (aka restore), or quit. (First letter of user entry, caps only, asks again if not B/R/Q.)
+
+This code also uses a Try/Except to report if the backup or restore failed for any reason, and continues back to the top menu if the user wants to try it again.
+#Note, this is using the same bucket I created in Asn2. For convenience, the same bucket name gets used, but Asn3 (DB files) are in the top level of the bucket, while Asn2 jsons or in subfolders.)
+#Note2, 
